@@ -1,0 +1,269 @@
+<kt-portlet>
+	<kt-portlet-header title="{{ 'USER.MAIN_TITLE' | translate }}" [class]="'kt-portlet__head--lg'">
+		<ng-container ktPortletTools>
+			<kt-auth-notice></kt-auth-notice>
+			<button *ngIf="cService.isUser()" (click)="openModal(UserModel)" mat-raised-button color="primary" matTooltip="{{ 'USER.ADD_USER_LABEL' | translate }}">{{ 'USER.ADD_USER_LABEL' | translate }}
+			</button>
+		</ng-container>
+	</kt-portlet-header>
+
+	<div class="body">
+
+		<div class="kt-margin-30" *ngIf="hasFormErrors">
+			<kt-alert type="warn" [showCloseButton]="true" [duration]="5000" (close)="hasFormErrors = !hasFormErrors">
+				{{errorMessage}}
+			</kt-alert>
+		</div>
+
+		<div class="kt-form kt-margin-30">
+			<div class="kt-form__filtration">
+				<div class="row align-items-center">
+					<div class="col-md-3 kt-margin-bottom-10-mobile">
+						<mat-form-field class="mat-form-field-fluid search_input_filed">
+							<input matInput [(ngModel)]="filter" (keyup)="applyFilter($event.target.value)"
+								placeholder="{{ 'USER.SEARCH' | translate }}">
+							<mat-hint align="start">
+								<strong>{{ 'USER.SEARCH' | translate }}</strong> {{ 'USER.SEARCH_HINT' | translate }}
+							</mat-hint>
+						</mat-form-field>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="mat-table__wrapper">
+			<mat-table class="lmat-elevation-z8" #table [dataSource]="dataSource" matSort #sort1="matSort"
+				matSortActive="id" matSortDirection="asc" matSortDisableClear>
+
+				<ng-container matColumnDef="srNo">
+					<mat-header-cell *matHeaderCellDef>{{ 'USER.USER_LIST.USER_LIST_HEADER_LABELS.SR_NO' | translate }}</mat-header-cell>
+					<mat-cell *matCellDef="let user; let i = index;"> {{(i+1) + (pageIndex * 10)}} </mat-cell>
+				</ng-container>
+
+				<ng-container matColumnDef="uniqueId">
+					<mat-header-cell *matHeaderCellDef>{{ 'USER.USER_LIST.USER_LIST_HEADER_LABELS.USER_ID' | translate }}</mat-header-cell>
+					<mat-cell *matCellDef="let user"><b>{{ user.uniqueId }}</b> </mat-cell>
+				</ng-container>
+
+				<ng-container matColumnDef="name">
+					<mat-header-cell *matHeaderCellDef>{{ 'USER.USER_LIST.USER_LIST_HEADER_LABELS.NAME' | translate }}</mat-header-cell>
+					<mat-cell *matCellDef="let user">{{ user.firstName + ' ' + user.lastName }}</mat-cell>
+				</ng-container>
+
+				<ng-container matColumnDef="role">
+					<mat-header-cell *matHeaderCellDef>{{ 'USER.USER_LIST.USER_LIST_HEADER_LABELS.ROLE' | translate }}</mat-header-cell>
+					<mat-cell *matCellDef="let user">{{ user.role.value}}</mat-cell>
+				
+				</ng-container>
+
+				<ng-container matColumnDef="phoneNumber">
+					<mat-header-cell *matHeaderCellDef>{{ 'USER.USER_LIST.USER_LIST_HEADER_LABELS.PHONE_NUMBER' | translate }}</mat-header-cell>
+					<mat-cell *matCellDef="let user">{{ user.phoneNumber }}</mat-cell>
+				</ng-container>
+
+				<ng-container matColumnDef="email">
+					<mat-header-cell *matHeaderCellDef>{{ 'USER.USER_LIST.USER_LIST_HEADER_LABELS.EMAIL' | translate }}</mat-header-cell>
+					<mat-cell *matCellDef="let user">{{ user.email }}</mat-cell>
+				</ng-container>
+
+				<ng-container matColumnDef="status">
+					<mat-header-cell *matHeaderCellDef>{{ 'USER.USER_LIST.USER_LIST_HEADER_LABELS.STATUS' | translate }}</mat-header-cell>
+					<mat-cell *matCellDef="let user">
+						<span *ngIf="user.status == 'ACTIVE'"
+							class="kt-badge kt-badge--inline kt-badge--pill kt-badge--success kt-badge--wide">{{ 'USER.USER_LIST.STATUS.ACTIVE' | translate }}</span>
+						<span *ngIf="user.status == 'DEACTIVE'"
+							class="kt-badge kt-badge--inline kt-badge--pill kt-badge-- kt-badge--wide">{{ 'USER.USER_LIST.STATUS.INACTIVE' | translate }}</span>
+					</mat-cell>
+				</ng-container>
+
+				<ng-container matColumnDef="action">
+					<mat-header-cell *matHeaderCellDef>{{ 'USER.USER_LIST.USER_LIST_HEADER_LABELS.ACTION' | translate }}</mat-header-cell>
+					<mat-cell *matCellDef="let user">
+
+						<button *ngIf="user.status == 'ACTIVE'" (click)="deactiveUser(user.id, 'DEACTIVE', 'deactivate')"
+							mat-icon-button color="primary" matTooltip="{{ 'USER.USER_LIST.ACTIONS_TOOLTIP.DEACTIVATE' | translate }}">
+							<mat-icon class="update_status">power_settings_new</mat-icon>
+						</button>
+
+						<button *ngIf="user.status == 'DEACTIVE'" (click)="updateStatus(user.id, 'ACTIVE', 'activate')"
+							mat-icon-button color="primary" matTooltip="{{ 'USER.USER_LIST.ACTIONS_TOOLTIP.ACTIVATE' | translate }}">
+							<mat-icon class="update_status">done</mat-icon>
+						</button>
+
+						<button mat-icon-button color="warn" matTooltip="{{ 'USER.USER_LIST.ACTIONS_TOOLTIP.DELETE_USER' | translate }}" type="button"
+							(click)="deleteUser(user, 'DELETED', 'deleted')">
+							<mat-icon>delete</mat-icon>
+						</button>
+
+						<button mat-icon-button [matMenuTriggerFor]="menu" matTooltip="{{ 'USER.USER_LIST.ACTIONS_TOOLTIP.MORE_ACTIONS.MAIN_TITLE' | translate }}" *ngIf="cService.isUser()">
+							<mat-icon>more_vert</mat-icon>
+						</button>
+						<mat-menu #menu="matMenu">
+
+							<button mat-menu-item (click)="editDetails(user.id, UserModel)">
+								<mat-icon class="edit_icon">create</mat-icon>
+								<span>{{ 'USER.USER_LIST.ACTIONS_TOOLTIP.MORE_ACTIONS.EDIT_INFO' | translate }}</span>
+							</button>
+							
+						</mat-menu>
+
+					</mat-cell>
+				</ng-container>
+
+				<mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+
+				<mat-row *matRowDef="let row; columns: displayedColumns"></mat-row>
+			</mat-table>
+
+			<div class="mat-table__message" *ngIf="loadingSubject | async">{{ 'USER.USER_LIST.DATA_LOADING_MESSAGE' | translate }}</div>
+            <div class="mat-table__message"
+                *ngIf="dataSource.data.length === 0 && (loadingSubject | async) === false">{{ 'USER.USER_LIST.NO_DATA_FOUND' | translate }}</div>
+		</div>
+
+		<div class="mat-table__bottom">
+			<mat-spinner [diameter]="20" *ngIf="showLoader$ | async"></mat-spinner>
+			<mat-paginator [hidePageSize]="true"  [pageIndex]="pageIndex" [pageSize]="limit" [pageSizeOptions]="pageSizeOptions" 
+				[showFirstLastButtons]="false" [length]="totalData" #matPaginator (page)="onPaginationChange($event)">
+			</mat-paginator>
+		</div>
+	</div>
+</kt-portlet>
+
+<ng-template #UserModel let-c="close" let-d="dismiss">
+	<div class="modal-header">
+		<h4 class="modal-title">{{ formTitle }}</h4>
+		<button type="button" class="close" aria-label="Close" (click)="d('Cross click')">
+			<span aria-hidden="true">&times;</span>
+		</button>
+	</div>
+	<div class="modal-body">
+		<form class="example-form" [formGroup]="userForm">
+		
+			<div class="row">
+				<div class="col">
+					<div class="form-group">
+						<label>{{ 'USER.ADD_USER.LABELS.FIRST_NAME' | translate }}</label>
+						<input type="hidden" class="form-control"  autocomplete="off" formControlName="id" name="id">
+						<div class="input-group mb-1">
+						<input type="text" class="form-control" (blur)="onNameChange()"  autocomplete="off" formControlName="firstName" name="firstName"
+							placeholder="{{ 'USER.ADD_USER.LABELS.FIRST_NAME' | translate }}">
+						</div>
+						<mat-error *ngIf="userForm.get('firstName').errors && userForm.get('firstName').touched">
+						
+							 <span  *ngIf="userForm.get('firstName').errors?.required">
+								{{ 'USER.ADD_USER.ERROR_MESSAGE.REQUIRED_FIRST_NAME' | translate }}
+							</span>
+							<span  *ngIf="userForm.get('firstName').errors?.pattern">
+								{{ 'USER.ADD_USER.ERROR_MESSAGE.PATTERN_FIRST_NAME' | translate }}
+							</span>
+						</mat-error>
+					</div>
+				</div>
+				<div class="col">
+					<div class="form-group">
+						<label>{{ 'USER.ADD_USER.LABELS.LAST_NAME' | translate }}</label>
+						<div class="input-group mb-1">
+						<input type="text" class="form-control" (blur)="onNameChange()"  autocomplete="off" formControlName="lastName" name="lastName"
+							placeholder="{{ 'USER.ADD_USER.LABELS.LAST_NAME' | translate }}">
+						</div>
+						<mat-error *ngIf="userForm.get('lastName').errors && userForm.get('lastName').touched">
+							
+							 <span  *ngIf="userForm.get('lastName').errors?.required">
+								{{ 'USER.ADD_USER.ERROR_MESSAGE.REQUIRED_LAST_NAME' | translate }}
+							</span>
+							<span  *ngIf="userForm.get('lastName').errors?.pattern">
+								{{ 'USER.ADD_USER.ERROR_MESSAGE.PATTERN_LAST_NAME' | translate }}
+							</span>
+						</mat-error>
+					</div>
+				</div>
+			</div>
+			<div class="form-group">
+				<label>{{ 'USER.ADD_USER.LABELS.EMAIL' | translate }}</label>
+				<div class="input-group mb-1">
+					<input type="text" class="form-control"  autocomplete="off" formControlName="email" 
+						name="email" placeholder="{{ 'USER.ADD_USER.LABELS.EMAIL' | translate }}" >
+				</div>
+				<mat-error *ngIf="userForm.get('email').errors && userForm.get('email').touched">
+				
+					 <span  *ngIf="userForm.get('email').errors?.required">
+						{{ 'USER.ADD_USER.ERROR_MESSAGE.REQUIRED_EMAIL' | translate }}
+					</span>
+					<span  *ngIf="userForm.get('email').errors?.pattern">
+						{{ 'USER.ADD_USER.ERROR_MESSAGE.PATTERN_EMAIL' | translate }}
+					</span>
+
+					<span  *ngIf="userForm.get('email').errors?.emailExist">
+						{{ 'USER.ADD_USER.ERROR_MESSAGE.EXIST_EMAIL_USER' | translate }}
+					</span>
+
+				</mat-error>
+				
+			</div>
+			<div class="row">
+				<div class="col-6">
+					<div class="form-group">
+						<label>{{ 'USER.ADD_USER.LABELS.USERNAME' | translate }}</label>
+						<div class="input-group mb-1">
+						<input type="text" class="form-control" 
+							 autocomplete="off" formControlName="username" name="username" placeholder="{{ 'USER.ADD_USER.LABELS.USERNAME' | translate }}">
+							</div>
+						<mat-error *ngIf="userForm.get('username').errors && userForm.get('username').touched">
+						
+							 <span  *ngIf="userForm.get('username').errors?.required">
+								{{ 'USER.ADD_USER.ERROR_MESSAGE.REQUIRED_USERNAME' | translate }}
+							</span>
+
+							<span  *ngIf="userForm.get('username').errors?.userIdExist">
+								{{ 'USER.ADD_USER.ERROR_MESSAGE.EXIST_USERNAME' | translate }}
+							</span>
+						</mat-error>
+						
+					</div>
+				</div>
+				<div class="col-6">
+					<div class="form-group">
+						<div class="form-group">
+							<label>{{ 'USER.ADD_USER.LABELS.PHONE_NUMBER' | translate }}</label>
+							<div class="input-group mb-1">
+							<input type="text" class="form-control"  autocomplete="off" formControlName="phoneNumber" prefix="+1 "
+								mask="(000) 000 0000" name="phoneNumber" 
+								placeholder="+1 (999) 999 9999">
+							</div>
+							<mat-error class="help-block"
+								*ngIf="userForm.get('phoneNumber').errors && userForm.get('phoneNumber').touched">
+								
+								 <span  *ngIf="userForm.get('phoneNumber').errors?.required">
+									{{ 'USER.ADD_USER.ERROR_MESSAGE.REQUIRED_PHONE_NUMBER' | translate }}
+								</span>
+							</mat-error>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="form-group">
+				<label>{{ 'USER.ADD_USER.LABELS.ROLE' | translate }}</label>
+				<div class="input-group mb-1">
+				<select class="form-control" name="role"  autocomplete="off" formControlName="role">
+					<option value="null" disabled>{{ 'USER.ADD_USER.ERROR_MESSAGE.REQUIRED_ROLE' | translate }}</option>
+				   <option *ngFor="let role of roleList" [value]="role.id"> {{ role.value }} </option>
+				</select>
+			</div>
+				<mat-error *ngIf="userForm.get('role').errors && userForm.get('role').touched">
+					
+					 <span  *ngIf="userForm.get('role').errors?.required">
+						{{ 'USER.ADD_USER.ERROR_MESSAGE.REQUIRED_ROLE' | translate }}
+					</span>
+				</mat-error>
+			</div>
+		</form>
+	</div>
+	<div class="modal-footer">
+		<button type="button" class="btn btn-secondary" (click)="c('Close click')">{{ 'USER.ADD_USER.BUTTONS.CLOSE' | translate }}</button>
+		<button type="button" (click)="submit()" class="btn btn-primary">
+			<div *ngIf="!isInEditMode;else updateFlag">{{ 'USER.ADD_USER.BUTTONS.SAVE' | translate }}</div>
+			<ng-template #updateFlag>{{ 'USER.ADD_USER.BUTTONS.UPDATE' | translate }}</ng-template>
+		</button>
+	</div>
+</ng-template>
